@@ -194,3 +194,6 @@ if [[ -d "$DOTFILES" ]]; then
 fi
 echo "\n✨ Configuration loading complete\n"
 export PATH="$HOME/.local/bin:$PATH"
+
+# Added by Antigravity
+export PATH="/Users/nathanormond/.antigravity/antigravity/bin:$PATH"

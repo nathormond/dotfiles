@@ -29,20 +29,34 @@ source ~/.p10k.zsh
 # Initialize the completion system
 autoload -Uz compinit && compinit
 
+# Completion styling - enable menu selection with highlighting
+zstyle ':completion:*' menu select                              # Enable menu selection
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"         # Use LS_COLORS for file completions
+zstyle ':completion:*:*:*:*:default' list-colors '=*=90'        # Dim color for non-selected items
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'             # Case-insensitive matching
+zstyle ':completion:*' special-dirs true                        # Complete . and .. directories
+zstyle ':completion:*' group-name ''                            # Group completions by type
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+
 # History configuration
 HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
-setopt appendhistory notify
-setopt sharehistory # Share history between all sessions
-setopt hist_expire_dups_first # Expire duplicate entries first
-setopt hist_ignore_dups # Ignore duplicate commands
-setopt hist_ignore_all_dups # Ignore all duplicate commands
-setopt hist_ignore_space # Ignore commands that start with a space
-setopt hist_find_no_dups # Don't find duplicate commands when searching
-setopt hist_save_no_dups # Don't save duplicate commands
-setopt extended_history # Add timestamps to history
-setopt inc_append_history # Append to history file immediately
+HISTSIZE=100000                    # Commands to keep in memory
+SAVEHIST=100000                    # Commands to save to file
+
+setopt EXTENDED_HISTORY            # Write timestamps to history
+setopt HIST_EXPIRE_DUPS_FIRST      # Expire duplicate entries first when trimming
+setopt HIST_IGNORE_DUPS            # Don't record consecutive duplicates
+setopt HIST_IGNORE_ALL_DUPS        # Delete old duplicate when new one is added
+setopt HIST_IGNORE_SPACE           # Don't record commands starting with space
+setopt HIST_FIND_NO_DUPS           # Don't show duplicates when searching
+setopt HIST_SAVE_NO_DUPS           # Don't write duplicates to file
+setopt HIST_VERIFY                 # Show command before executing from history
+setopt SHARE_HISTORY               # Share history across all sessions (reads & writes)
+setopt APPEND_HISTORY              # Append to history file, don't overwrite
+
+# Force history reload - useful keybinding for tmux users
+alias hr='fc -RI'                  # Reload history from file into current session
+alias history='fc -li 1'           # Show all history with timestamps by default
 
 
 # =========================================================

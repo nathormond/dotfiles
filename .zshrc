@@ -137,7 +137,7 @@ if [[ -f "$LOCAL_SECRETS/aliases.sh" ]]; then
     source "$LOCAL_SECRETS/aliases.sh"
 fi
 export DEV="$HOME/Dev"
-export HDS="$DEV/HDS"
+export REEL="$DEV/reelables"
 export NOTES="/Users/$USER/Documents/obsidian-vault"
 export ANDROID_HOME=$HOME/Library/Android/sdk
 export PATH=$PATH:$ANDROID_HOME/platform-tools
@@ -145,8 +145,9 @@ export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
 export PATH=$PATH:$ANDROID_HOME/emulator
 export SSH_AUTH_SOCK=~/.1password/agent.sock
 alias please='sudo'
-alias cdev='cd $DEV'
-alias cdev-hds='cd $HDS'
+alias cdev='cd $REEL'
+alias edh='cd $REEL/edge-data-hub'
+alias dev='cd $'
 alias cdotfiles='cd $DEV/dotfiles'
 alias c='clear'
 alias hgrep="history | grep"

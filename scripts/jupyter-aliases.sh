@@ -29,7 +29,7 @@ jup() {
 # Usage: jup-link [windows_username]
 jup-link() {
     # Only run on WSL
-    if ! grep -q Microsoft /proc/version; then
+    if [[ ! -f /proc/version ]] || ! grep -q Microsoft /proc/version 2>/dev/null; then
         echo "This command is only for WSL environments."
         return 1
     fi
@@ -85,7 +85,7 @@ alias jlab='jupyter lab'
 alias jlab-no-browser='jupyter lab --no-browser'
 
 # If we're in WSL, add specific WSL aliases
-if grep -q Microsoft /proc/version; then
+if [[ -f /proc/version ]] && grep -q Microsoft /proc/version 2>/dev/null; then
     alias jnb='jupyter notebook --no-browser'
     alias jlab='jupyter lab --no-browser'
     

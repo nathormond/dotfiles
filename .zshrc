@@ -1,7 +1,72 @@
 #!/bin/zsh
 
+# Enable Powerlevel10k instant prompt. Must stay at the very top of ~/.zshrc.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Dedup PATH on every assignment so re-sourcing this file doesn't stack duplicate entries
+typeset -U path
+
 # =========================================================
-# Section 1: Zinit Setup & Powerlevel10k Theme
+# Section 1: Environment & PATH
+# =========================================================
+export DOTFILES="$HOME/Dev/dotfiles"
+export DEV="$HOME/Dev"
+export HDS="$DEV/HDS"
+export NOTES="$HOME/Documents/obsidian-vault"
+
+if [[ "$(uname)" == "Darwin" ]]; then
+    export PLATFORM="mac"
+elif [[ "$(uname)" == "Linux" ]]; then
+    export PLATFORM="linux"
+else
+    export PLATFORM="unknown"
+fi
+
+# Set TERM for tmux sessions
+if [[ -n "$TMUX" ]]; then
+  export TERM="tmux-256color"
+fi
+
+# Homebrew environment
+if [[ -x "/opt/homebrew/bin/brew" ]]; then
+    export HOMEBREW_PREFIX="/opt/homebrew"
+    export HOMEBREW_CELLAR="/opt/homebrew/Cellar"
+    export HOMEBREW_REPOSITORY="/opt/homebrew"
+    export PATH="/opt/homebrew/bin:/opt/homebrew/sbin${PATH+:$PATH}"
+    export MANPATH="/opt/homebrew/share/man${MANPATH+:$MANPATH}:"
+    export INFOPATH="/opt/homebrew/share/info:${INFOPATH:-}"
+elif [[ -x "/usr/local/bin/brew" ]]; then
+    export PATH="/usr/local/bin:$PATH"
+fi
+
+if [[ -n $SSH_CONNECTION ]]; then
+    export EDITOR='vim'
+else
+    export EDITOR='nvim'
+fi
+
+# Go Environment
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOROOT/bin:$PATH:$GOPATH/bin
+
+# Android SDK
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+export PATH=$PATH:$ANDROID_HOME/emulator
+
+# User Local Bins
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+export PATH="$HOME/.antigravity-ide/antigravity-ide/bin:$PATH"
+
+export SSH_AUTH_SOCK=~/.1password/agent.sock
+
+# =========================================================
+# Section 2: Zinit Plugin Manager & Theme
 # =========================================================
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33}Installing Zinit Initiative Plugin Manager..."
@@ -14,136 +79,55 @@ fi
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
+
 zinit light romkatv/powerlevel10k
 zinit light zdharma-continuum/fast-syntax-highlighting
 zinit light zsh-users/zsh-autosuggestions
 zinit light zsh-users/zsh-completions
-source ~/.p10k.zsh
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # =========================================================
-# Section 1.1: Completion and History
+# Section 3: Completion and History
 # =========================================================
-# Initialize the completion system
-autoload -Uz compinit && compinit
+# Fast compinit with dump check
+autoload -Uz compinit
+if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.m+1) ]]; then
+  compinit
+else
+  compinit -C
+fi
 
-# Completion styling - enable menu selection with highlighting
-zstyle ':completion:*' menu select                              # Enable menu selection
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"         # Use LS_COLORS for file completions
-zstyle ':completion:*:*:*:*:default' list-colors '=*=90'        # Dim color for non-selected items
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'             # Case-insensitive matching
-zstyle ':completion:*' special-dirs true                        # Complete . and .. directories
-zstyle ':completion:*' group-name ''                            # Group completions by type
+# Completion styling
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*:*:*:*:default' list-colors '=*=90'
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+zstyle ':completion:*' special-dirs true
+zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
 
 # History configuration
 HISTFILE=~/.zsh_history
-HISTSIZE=100000                    # Commands to keep in memory
-SAVEHIST=100000                    # Commands to save to file
+HISTSIZE=100000
+SAVEHIST=100000
 
-setopt EXTENDED_HISTORY            # Write timestamps to history
-setopt HIST_EXPIRE_DUPS_FIRST      # Expire duplicate entries first when trimming
-setopt HIST_IGNORE_DUPS            # Don't record consecutive duplicates
-setopt HIST_IGNORE_ALL_DUPS        # Delete old duplicate when new one is added
-setopt HIST_IGNORE_SPACE           # Don't record commands starting with space
-setopt HIST_FIND_NO_DUPS           # Don't show duplicates when searching
-setopt HIST_SAVE_NO_DUPS           # Don't write duplicates to file
-setopt HIST_VERIFY                 # Show command before executing from history
-setopt SHARE_HISTORY               # Share history across all sessions (reads & writes)
-setopt APPEND_HISTORY              # Append to history file, don't overwrite
+setopt EXTENDED_HISTORY
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_VERIFY
+setopt SHARE_HISTORY
+setopt APPEND_HISTORY
 
-# Force history reload - useful keybinding for tmux users
-alias hr='fc -RI'                  # Reload history from file into current session
-alias history='fc -li 1'           # Show all history with timestamps by default
-
+alias hr='fc -RI'
+alias history='fc -li 1'
 
 # =========================================================
-# Section 2: Core Configuration
+# Section 4: Aliases & External Tools
 # =========================================================
-print_status() {
-    local component=$1
-    local state=$2
-    if [ "$state" = "enabled" ]; then
-        echo "\033[0;32m✓ $component configured\033[0m"
-    else
-        echo "\033[0;31m✗ $component not found\033[0m"
-    fi
-}
-
-#check_vim_clipboard() {
-#    if [[ "$(uname)" == "Linux" ]]; then
-#        if command -v vim >/dev/null 2>&1; then
-#            if ! vim --version | grep -q '+clipboard'; then
-#                echo "📋 Vim does not have clipboard support. Installing vim-gtk3..."
-#                sudo apt-get update && sudo apt-get install -y vim-gtk3
-#                echo "✅ Installed vim with clipboard support."
-#            fi
-#        fi
-#    fi
-#}
-export DOTFILES="$HOME/Dev/dotfiles"
-if [[ "$(uname)" == "Darwin" ]]; then
-    export PLATFORM="mac"
-elif [[ "$(uname)" == "Linux" ]]; then
-    export PLATFORM="linux"
-else
-    export PLATFORM="unknown"
-fi
-# Set TERM for tmux sessions
-if [[ -n "$TMUX" ]]; then
-  export TERM="tmux-256color"
-fi
-if [[ -x "/opt/homebrew/bin/brew" ]] || [[ -x "/usr/local/bin/brew" ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-fi
-if [ -s "/opt/homebrew/opt/nvm/nvm.sh" ]; then
-    export NVM_DIR="$HOME/.nvm"
-    source "/opt/homebrew/opt/nvm/nvm.sh"
-    source "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
-fi
-if [[ -n $SSH_CONNECTION ]]; then
-    export EDITOR='vim'
-else
-    export EDITOR='nvim'
-fi
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export PATH=$GOROOT/bin:$PATH:$GOPATH/bin
-if [ -d "/opt/homebrew/share/google-cloud-sdk" ]; then
-    if [ -f "/opt/homebrew/share/google-cloud-sdk/path.zsh.inc" ]; then
-        source "/opt/homebrew/share/google-cloud-sdk/path.zsh.inc"
-    fi
-    if [ -f "/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc" ]; then
-        source "/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc"
-    fi
-fi
-if [ -f "/opt/homebrew/Caskroom/miniconda/base/bin/conda" ]; then
-    __conda_setup="$('/opt/homebrew/Caskroom/miniconda/base/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-    if [ $? -eq 0 ]; then
-        eval "$__conda_setup"
-    else
-        if [ -f "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh" ]; then
-            . "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh"
-        else
-            export PATH="/opt/homebrew/Caskroom/miniconda/base/bin:$PATH"
-        fi
-    fi
-    unset __conda_setup
-fi
-export LOCAL_SECRETS="$HOME/afterzsh"
-if [[ -f "$LOCAL_SECRETS/aliases.sh" ]]; then
-    source "$LOCAL_SECRETS/aliases.sh"
-fi
-export DEV="$HOME/Dev"
-export HDS="$DEV/HDS"
-export NOTES="/Users/$USER/Documents/obsidian-vault"
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools
-export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-export PATH=$PATH:$ANDROID_HOME/emulator
-export SSH_AUTH_SOCK=~/.1password/agent.sock
 alias please='sudo'
 alias cdev='cd $DEV'
 alias cdev-hds='cd $HDS'
@@ -155,59 +139,51 @@ alias notes-push='git add . && git commit -m "notes: $(date +%Y-%m-%d)" && git p
 alias copy="pbcopy"
 alias paste="pbpaste"
 alias write-secrets='$EDITOR ~/afterzsh/aliases.sh'
-export SSH_AUTH_SOCK=~/.1password/agent.sock
+
+export LOCAL_SECRETS="$HOME/afterzsh"
+if [[ -f "$LOCAL_SECRETS/aliases.sh" ]]; then
+    source "$LOCAL_SECRETS/aliases.sh"
+fi
+
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#999999"
 
-# =========================================================
-# Section 3: Status Messages (Console Output)
-# =========================================================
-echo "\n🔧 Loading configurations..."
-print_status "Platform detection ($PLATFORM)" "enabled"
-print_status "Homebrew" "enabled"
-print_status "Node Version Manager" "enabled"
-if command -v $EDITOR >/dev/null 2>&1; then
-    print_status "Editor ($EDITOR)" "enabled"
-else
-    print_status "Editor ($EDITOR)" "disabled"
-fi
-if command -v go >/dev/null 2>&1; then
-    print_status "Go" "enabled ($(go version))"
-else
-    print_status "Go" "disabled"
-fi
+# Google Cloud SDK
 if [ -d "/opt/homebrew/share/google-cloud-sdk" ]; then
-    print_status "Google Cloud SDK" "enabled"
-else
-    print_status "Google Cloud SDK" "disabled"
+    [ -f "/opt/homebrew/share/google-cloud-sdk/path.zsh.inc" ] && source "/opt/homebrew/share/google-cloud-sdk/path.zsh.inc"
+    [ -f "/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc" ] && source "/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc"
 fi
-if [ -f "/opt/homebrew/Caskroom/miniconda/base/bin/conda" ]; then
-    print_status "Conda" "enabled"
-else
-    print_status "Conda" "disabled"
-fi
-if [ -f "$HOME/.local/share/zinit/zinit.git/zinit.zsh" ]; then
-    print_status "Zinit" "enabled"
-else
-    print_status "Zinit" "disabled"
-fi
-if [[ -f "$LOCAL_SECRETS/aliases.sh" ]]; then
-    print_status "Custom Aliases" "enabled"
-else
-    print_status "Custom Aliases" "disabled"
-fi
-if [[ -d "$DOTFILES" ]]; then
-    if [[ ! -L "$HOME/.zshrc" || "$(readlink "$HOME/.zshrc")" != "$DOTFILES/.zshrc" ]]; then
-        echo "Dotfiles need to be installed. Running install script..."
-        if [[ -f "$DOTFILES/install.sh" ]]; then
-            chmod +x "$DOTFILES/install.sh"
-            "$DOTFILES/install.sh"
-        fi
-    fi
-#    check_vim_clipboard
-fi
-echo "\n✨ Configuration loading complete\n"
-export PATH="$HOME/.local/bin:$PATH"
 
-# Added by Antigravity
-export PATH="/Users/nathanormond/.antigravity/antigravity/bin:$PATH"
+# Conda (Lazy-loaded on demand if installed, preventing pollution of PATH/virtualenvs for Poetry & Pyenv)
+for _conda_path in \
+    "$HOME/miniconda3/bin/conda" \
+    "$HOME/anaconda3/bin/conda" \
+    "/opt/homebrew/Caskroom/miniconda/base/bin/conda" \
+    "/opt/homebrew/anaconda3/bin/conda"; do
+    if [ -f "$_conda_path" ]; then
+        CONDA_EXE="$_conda_path"
+        conda() {
+            unset -f conda
+            eval "$("$CONDA_EXE" 'shell.zsh' 'hook' 2> /dev/null)"
+            conda "$@"
+        }
+        break
+    fi
+done
+unset _conda_path
+
+# Pyenv initialization (Fixed invalid --install flag)
+export PYENV_ROOT="$HOME/.pyenv"
+if [[ -d $PYENV_ROOT/bin ]]; then
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+elif command -v pyenv >/dev/null 2>&1; then
+    eval "$(pyenv init -)"
+fi
+
+# NVM initialization
+export NVM_DIR="$HOME/.nvm"
+if [ -s "/opt/homebrew/opt/nvm/nvm.sh" ]; then
+    source "/opt/homebrew/opt/nvm/nvm.sh"
+    [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && source "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+fi

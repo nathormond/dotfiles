@@ -26,3 +26,8 @@
 	process = git-lfs filter-process
 	required = true
 	clean = git-lfs clean -- %f
+
+[includeIf "gitdir/i:/Users/nathanormond/Dev/logiq/"]
+    path = /Users/nathanormond/Dev/logiq/.gitconfig
+[includeIf "gitdir/i:/Users/nathanormond/Dev/logiq-systems/workspace/"]
+	path = /Users/nathanormond/Dev/logiq-systems/workspace/.gitconfig
